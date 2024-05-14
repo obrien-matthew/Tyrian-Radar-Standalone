@@ -6,13 +6,13 @@ namespace Radar
 {
     internal static class AssetBundleManager
     {
-        public static GameObject RadarhudPrefab { get; private set; }
-        public static GameObject RadarBliphudPrefab { get; private set; }
+        public static GameObject? RadarhudPrefab { get; private set; }
+        public static GameObject? RadarBliphudPrefab { get; private set; }
 
-        public static Sprite EnemyBlip { get; private set; }
-        public static Sprite EnemyBlipDown { get; private set; }
-        public static Sprite EnemyBlipUp { get; private set; }
-        public static Sprite EnemyBlipDead { get; private set; }
+        public static Sprite? EnemyBlip { get; private set; }
+        public static Sprite? EnemyBlipDown { get; private set; }
+        public static Sprite? EnemyBlipUp { get; private set; }
+        public static Sprite? EnemyBlipDead { get; private set; }
 
         internal static bool Loaded { get; private set; } = false;
 
@@ -20,7 +20,7 @@ namespace Radar
         internal static void LoadAssetBundle()
         {
             if (Loaded) return;
-            
+
             using var resourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Radar.bundle.radarhud.bundle");
             if (resourceStream == null)
             {

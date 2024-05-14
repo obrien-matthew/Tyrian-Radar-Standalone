@@ -9,11 +9,11 @@ using UnityEngine;
 
 namespace Radar
 {
-    [BepInPlugin("Tyrian.Radar", "Radar", "1.1.3")]
+    [BepInPlugin("Tyrian.Radar", "Radar", "1.1.5")]
     public class Radar : BaseUnityPlugin
     {
-        internal static Radar Instance {get; private set;}
-        
+        internal static Radar? Instance { get; private set; }
+
         public static Dictionary<GameObject, HashSet<Material>> objectsMaterials = new Dictionary<GameObject, HashSet<Material>>();
 
         const string baseSettings = "Base Settings";
@@ -21,32 +21,35 @@ namespace Radar
         const string colorSettings = "Color Settings";
         const string radarSettings = "Radar Settings";
 
-        public static ConfigEntry<string> radarLanguage;
-        public static ConfigEntry<bool> radarEnableConfig;
-        public static ConfigEntry<bool> radarEnablePulseConfig;
-        public static ConfigEntry<bool> radarEnableCorpseConfig;
-        public static ConfigEntry<bool> radarEnableLootConfig;
-        public static ConfigEntry<KeyboardShortcut> radarEnableShortCutConfig;
-        public static ConfigEntry<KeyboardShortcut> radarEnableCorpseShortCutConfig;
-        public static ConfigEntry<KeyboardShortcut> radarEnableLootShortCutConfig;
+        public static ConfigEntry<string> radarLanguage = null!;
+        public static ConfigEntry<bool> radarEnableConfig = null!;
+        public static ConfigEntry<bool> radarEnablePulseConfig = null!;
+        public static ConfigEntry<bool> radarEnableCorpseConfig = null!;
+        public static ConfigEntry<bool> radarEnableLootConfig = null!;
+        public static ConfigEntry<KeyboardShortcut> radarEnableShortCutConfig = null!;
+        public static ConfigEntry<KeyboardShortcut> radarEnableCorpseShortCutConfig = null!;
+        public static ConfigEntry<KeyboardShortcut> radarEnableLootShortCutConfig = null!;
 
-        public static ConfigEntry<float> radarSizeConfig;
-        public static ConfigEntry<float> radarBlipSizeConfig;
-        public static ConfigEntry<float> radarDistanceScaleConfig;
-        public static ConfigEntry<float> radarYHeightThreshold;
-        public static ConfigEntry<float> radarOffsetYConfig;
-        public static ConfigEntry<float> radarOffsetXConfig;
-        public static ConfigEntry<float> radarRangeConfig;
-        public static ConfigEntry<float> radarScanInterval;
-        public static ConfigEntry<float> radarLootThreshold;
+        public static ConfigEntry<float> radarSizeConfig = null!;
+        public static ConfigEntry<float> radarBlipSizeConfig = null!;
+        public static ConfigEntry<float> radarDistanceScaleConfig = null!;
+        public static ConfigEntry<float> radarYHeightThreshold = null!;
+        public static ConfigEntry<float> radarOffsetYConfig = null!;
+        public static ConfigEntry<float> radarOffsetXConfig = null!;
+        public static ConfigEntry<float> radarRangeConfig = null!;
+        public static ConfigEntry<float> radarScanInterval = null!;
+        public static ConfigEntry<float> radarLootThreshold = null!;
 
-        public static ConfigEntry<Color> bossBlipColor;
-        public static ConfigEntry<Color> usecBlipColor;
-        public static ConfigEntry<Color> bearBlipColor;
-        public static ConfigEntry<Color> scavBlipColor;
-        public static ConfigEntry<Color> corpseBlipColor;
-        public static ConfigEntry<Color> lootBlipColor;
-        public static ConfigEntry<Color> backgroundColor;
+        public static ConfigEntry<Color> bossBlipColor = null!;
+        public static ConfigEntry<Color> usecBlipColor = null!;
+        public static ConfigEntry<Color> bearBlipColor = null!;
+        public static ConfigEntry<Color> scavBlipColor = null!;
+        public static ConfigEntry<Color> bestLootBlipColor = null!;
+        public static ConfigEntry<Color> betterLootBlipColor = null!;
+        public static ConfigEntry<Color> goodLootBlipColor = null!;
+        public static ConfigEntry<Color> corpseBlipColor = null!;
+        public static ConfigEntry<Color> lootBlipColor = null!;
+        public static ConfigEntry<Color> backgroundColor = null!;
 
 
         internal static ManualLogSource Log { get; private set; } = null!;
@@ -92,21 +95,24 @@ namespace Radar
                 new ConfigDescription(Locales.GetTranslatedString("radar_y_position_info"), new AcceptableValueRange<float>(-4000f, 4000f)));
             radarRangeConfig = Config.Bind<float>(radarSettings, Locales.GetTranslatedString("radar_range"), 128f,
                 new ConfigDescription(Locales.GetTranslatedString("radar_range_info"), new AcceptableValueRange<float>(32f, 512f)));
-            radarScanInterval = Config.Bind<float>(radarSettings, Locales.GetTranslatedString("radar_scan_interval"), 1f,
+            radarScanInterval = Config.Bind<float>(radarSettings, Locales.GetTranslatedString("radar_scan_interval"), 3f,
                 new ConfigDescription(Locales.GetTranslatedString("radar_scan_interval_info"), new AcceptableValueRange<float>(0.1f, 30f)));
             radarLootThreshold = Config.Bind<float>(radarSettings, Locales.GetTranslatedString("radar_loot_threshold"), 30000f,
-                new ConfigDescription(Locales.GetTranslatedString("radar_loot_threshold_info"), new AcceptableValueRange<float>(5000f, 100000f)));
-            
-            bossBlipColor = Config.Bind<Color>(colorSettings, Locales.GetTranslatedString("radar_boss_blip_color"), new Color(1f, 0f, 0f));
-            scavBlipColor = Config.Bind<Color>(colorSettings, Locales.GetTranslatedString("radar_scav_blip_color"), new Color(0f, 1f, 0f));
-            usecBlipColor = Config.Bind<Color>(colorSettings, Locales.GetTranslatedString("radar_usec_blip_color"), new Color(1f, 1f, 0f));
-            bearBlipColor = Config.Bind<Color>(colorSettings, Locales.GetTranslatedString("radar_bear_blip_color"), new Color(1f, 0.5f, 0f));
-            corpseBlipColor = Config.Bind<Color>(colorSettings, Locales.GetTranslatedString("radar_corpse_blip_color"), new Color(0.5f, 0.5f, 0.5f));
-            lootBlipColor = Config.Bind<Color>(colorSettings, Locales.GetTranslatedString("radar_loot_blip_color"), new Color(0.9f, 0.5f, 0.5f));
+                new ConfigDescription(Locales.GetTranslatedString("radar_loot_threshold_info"), new AcceptableValueRange<float>(1000f, 100000f)));
+
+            bossBlipColor = Config.Bind<Color>(colorSettings, Locales.GetTranslatedString("radar_boss_blip_color"), new Color(1f, 0f, 1f));
+            scavBlipColor = Config.Bind<Color>(colorSettings, Locales.GetTranslatedString("radar_scav_blip_color"), new Color(1f, 1f, 0f));
+            usecBlipColor = Config.Bind<Color>(colorSettings, Locales.GetTranslatedString("radar_usec_blip_color"), new Color(1f, 0f, 0f));
+            bearBlipColor = Config.Bind<Color>(colorSettings, Locales.GetTranslatedString("radar_bear_blip_color"), new Color(1f, 0.25f, 0f));
+            corpseBlipColor = Config.Bind<Color>(colorSettings, Locales.GetTranslatedString("radar_corpse_blip_color"), new Color(0.5f, 0.5f, 0.5f, 0.5f));
+            bestLootBlipColor = Config.Bind<Color>(colorSettings, "Loot (Best) Blip Color", new Color(0f, 1f, 0f, 0.9f));
+            betterLootBlipColor = Config.Bind<Color>(colorSettings, "Loot (Better) Blip Color", new Color(0.33f, 1f, 0.33f, 0.75f));
+            goodLootBlipColor = Config.Bind<Color>(colorSettings, "Loot (Good) Blip Color", new Color(0.66f, 1f, 0.66f, 0.5f));
+            lootBlipColor = Config.Bind<Color>(colorSettings, Locales.GetTranslatedString("radar_loot_blip_color"), new Color(1f, 1f, 1f, 0.25f));
             backgroundColor = Config.Bind<Color>(colorSettings, Locales.GetTranslatedString("radar_background_blip_color"), new Color(0f, 0.7f, 0.85f));
-            
+
             AssetBundleManager.LoadAssetBundle();
-            
+
             new GameStartPatch().Enable();
         }
     }

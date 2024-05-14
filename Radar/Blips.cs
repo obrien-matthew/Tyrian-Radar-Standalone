@@ -26,7 +26,7 @@ namespace Radar
             }
             else
             {
-                float totalThreshold = playerHeight * 1.5f * Radar.radarYHeightThreshold.Value;
+                float totalThreshold = playerHeight * 1.2f * Radar.radarYHeightThreshold.Value;
                 if (Mathf.Abs(blipPosition.y) <= totalThreshold)
                 {
                     blipImage.sprite = AssetBundleManager.EnemyBlip;
@@ -95,6 +95,17 @@ namespace Radar
                 {
                     _show = Radar.radarEnableCorpseConfig.Value && _show;
                 }
+
+                // don't show scav corpses
+                if (_isDead && _enemyPlayer.Profile.Info.Side == EPlayerSide.Savage && (
+                        _enemyPlayer.Profile.Info.Settings.Role == WildSpawnType.assault
+                        || _enemyPlayer.Profile.Info.Settings.Role == WildSpawnType.marksman
+                        || _enemyPlayer.Profile.Info.Settings.Role == WildSpawnType.assaultGroup
+                    )
+                )
+                {
+                    _show = false;
+                }
             }
 
             if (show && !_show && blipImage != null)
@@ -118,6 +129,8 @@ namespace Radar
         public int _price = 0;
         public LootItem _item;
         public string _itemId;
+        public Color _color;
+        public string _tier;
         private bool _lazyUpdate;
         public int _key;
 
@@ -140,7 +153,7 @@ namespace Radar
         {
             if (blip == null || blipImage == null)
                 return;
-            float totalThreshold = playerHeight * 1.5f * Radar.radarYHeightThreshold.Value;
+            float totalThreshold = playerHeight * 1.2f * Radar.radarYHeightThreshold.Value;
             if (blipPosition.y > totalThreshold)
             {
                 blipImage.sprite = AssetBundleManager.EnemyBlipUp;
@@ -148,11 +161,32 @@ namespace Radar
             else if (blipPosition.y < -totalThreshold)
             {
                 blipImage.sprite = AssetBundleManager.EnemyBlipDown;
-            } else
+            }
+            else
             {
                 blipImage.sprite = AssetBundleManager.EnemyBlipDead;
             }
-            blipImage.color = Radar.lootBlipColor.Value;
+            // set blip color
+            switch (_price)
+            {
+                case > 100000:
+                    _tier = "BEST";
+                    _color = Radar.bestLootBlipColor.Value;
+                    break;
+                case > 50000:
+                    _tier = "BETTER";
+                    _color = Radar.betterLootBlipColor.Value;
+                    break;
+                case > 25000:
+                    _tier = "GOOD";
+                    _color = Radar.goodLootBlipColor.Value;
+                    break;
+                default:
+                    _tier = "DEFAULT";
+                    _color = Radar.lootBlipColor.Value;
+                    break;
+            }
+            blipImage.color = _color;
 
             float blipSize = Radar.radarBlipSizeConfig.Value * 3f;
             blip.transform.localScale = new Vector3(blipSize, blipSize, blipSize);
@@ -177,6 +211,10 @@ namespace Radar
             }
             else
             {
+                if (_price >= 45000)
+                {
+                    Radar.Log.LogInfo("Updating loot blip: " + _item.Name + " [" + _itemId + "] at " + blipPosition + " with price/slot " + _price + " and tier " + _tier);
+                }
                 UpdateAlpha();
                 UpdateBlipImage();
                 UpdatePosition(updatePosition);

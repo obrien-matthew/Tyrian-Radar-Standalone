@@ -3,14 +3,14 @@ using UnityEngine;
 
 namespace Radar
 {
-    public class InRaidRadarManager: MonoBehaviour
+    public class InRaidRadarManager : MonoBehaviour
     {
-        static public GameObject _radarGo;
-        
+        static public GameObject? _radarGo;
+
         private bool _enableSCDown = false;
         private bool _corpseSCDown = false;
         private bool _lootSCDown = false;
-        
+
         private void Awake()
         {
             new GClass723PatchAdd().Enable();
@@ -22,7 +22,7 @@ namespace Radar
                 Destroy(gameObject);
                 return;
             }
-            
+
             _radarGo = Instantiate(AssetBundleManager.RadarhudPrefab, playerCamera.transform.position, playerCamera.transform.rotation);
             _radarGo.transform.SetParent(playerCamera.transform);
             Radar.Log.LogInfo("Radar instantiated");
@@ -34,12 +34,12 @@ namespace Radar
             Radar.radarEnableConfig.SettingChanged += OnRadarEnableChanged;
             UpdateRadarStatus();
         }
-        
+
         private void OnDisable()
         {
             Radar.radarEnableConfig.SettingChanged -= OnRadarEnableChanged;
         }
-        
+
         private void OnRadarEnableChanged(object sender, EventArgs e)
         {
             UpdateRadarStatus();
@@ -57,7 +57,7 @@ namespace Radar
                 Radar.Log.LogWarning("Radar did not load properly or has been destroyed");
                 Destroy(gameObject);
             }
-            
+
         }
 
         private void Update()
