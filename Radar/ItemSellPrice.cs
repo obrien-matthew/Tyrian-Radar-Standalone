@@ -12,7 +12,7 @@ using CurrencyUtil = GClass2334;
 
 internal static class TraderClassExtensions
 {
-    private static ISession _Session = null!;
+    private static ISession _Session;
     private static ISession Session => _Session ??= ClientAppUtils.GetMainApp().GetClientBackEndSession();
 
     private static readonly FieldInfo SupplyDataField =
@@ -59,7 +59,7 @@ class ItemExtensions
         var result = trader.GetUserItemPrice(item);
         return result is null ? null : new(
             trader.LocalizedName,
-            result.Value.Amount / (item.Template.Height * item.Template.Width),
+            (int)(result.Value.Amount / (item.Template.Height * item.Template.Width) / Math.Max(item.Weight, 0.01f)),
             trader.GetSupplyData().CurrencyCourses[result.Value.CurrencyId],
             item.StackObjectsCount
         );

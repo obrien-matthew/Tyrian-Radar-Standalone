@@ -19,14 +19,27 @@ namespace Radar
         private void UpdateBlipImage()
         {
             if (blip == null || blipImage == null) return;
+            // set threshold for height difference
+            float totalThreshold = playerHeight * 1.2f * Radar.radarYHeightThreshold.Value;
             if (_isDead)
             {
-                blipImage.sprite = AssetBundleManager.EnemyBlipDead;
+                // set blip image for corpses
+                if (Mathf.Abs(blipPosition.y) <= totalThreshold)
+                {
+                    blipImage.sprite = AssetBundleManager.EnemyBlipDead;
+                }
+                else if (blipPosition.y > totalThreshold)
+                {
+                    blipImage.sprite = AssetBundleManager.EnemyBlipUp;
+                }
+                else if (blipPosition.y < -totalThreshold)
+                {
+                    blipImage.sprite = AssetBundleManager.EnemyBlipDown;
+                }
                 blipImage.color = Radar.corpseBlipColor.Value;
             }
             else
             {
-                float totalThreshold = playerHeight * 1.2f * Radar.radarYHeightThreshold.Value;
                 if (Mathf.Abs(blipPosition.y) <= totalThreshold)
                 {
                     blipImage.sprite = AssetBundleManager.EnemyBlip;
@@ -97,14 +110,16 @@ namespace Radar
                 }
 
                 // don't show scav corpses
-                if (_isDead && _enemyPlayer.Profile.Info.Side == EPlayerSide.Savage && (
+                if (_isDead && _enemyPlayer.Profile.Info.Side == EPlayerSide.Savage)
+                {
+                    if (
                         _enemyPlayer.Profile.Info.Settings.Role == WildSpawnType.assault
                         || _enemyPlayer.Profile.Info.Settings.Role == WildSpawnType.marksman
                         || _enemyPlayer.Profile.Info.Settings.Role == WildSpawnType.assaultGroup
                     )
-                )
-                {
-                    _show = false;
+                    {
+                        _show = false;
+                    }
                 }
             }
 
@@ -129,8 +144,6 @@ namespace Radar
         public int _price = 0;
         public LootItem _item;
         public string _itemId;
-        public Color _color;
-        public string _tier;
         private bool _lazyUpdate;
         public int _key;
 
@@ -146,6 +159,10 @@ namespace Radar
             if (offer != null)
             {
                 _price = offer.Price;
+            }
+            else
+            {
+                _price = 0;
             }
         }
 
@@ -166,27 +183,7 @@ namespace Radar
             {
                 blipImage.sprite = AssetBundleManager.EnemyBlipDead;
             }
-            // set blip color
-            switch (_price)
-            {
-                case > 100000:
-                    _tier = "BEST";
-                    _color = Radar.bestLootBlipColor.Value;
-                    break;
-                case > 50000:
-                    _tier = "BETTER";
-                    _color = Radar.betterLootBlipColor.Value;
-                    break;
-                case > 25000:
-                    _tier = "GOOD";
-                    _color = Radar.goodLootBlipColor.Value;
-                    break;
-                default:
-                    _tier = "DEFAULT";
-                    _color = Radar.lootBlipColor.Value;
-                    break;
-            }
-            blipImage.color = _color;
+            blipImage.color = Radar.lootBlipColor.Value;
 
             float blipSize = Radar.radarBlipSizeConfig.Value * 3f;
             blip.transform.localScale = new Vector3(blipSize, blipSize, blipSize);
@@ -211,10 +208,6 @@ namespace Radar
             }
             else
             {
-                if (_price >= 45000)
-                {
-                    Radar.Log.LogInfo("Updating loot blip: " + _item.Name + " [" + _itemId + "] at " + blipPosition + " with price/slot " + _price + " and tier " + _tier);
-                }
                 UpdateAlpha();
                 UpdateBlipImage();
                 UpdatePosition(updatePosition);
