@@ -1,19 +1,19 @@
 ﻿using EFT.Interactive;
 using EFT;
-using System;
 using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
+using Item = EFT.InventoryLogic.Item;
 
 namespace Radar
 {
     public class BlipPlayer : Target
     {
-        private Player? _enemyPlayer = null;
+        private readonly Player _enemyPlayer;
         private bool _isDead = false;
         public BlipPlayer(Player enemyPlayer)
         {
-            this._enemyPlayer = enemyPlayer;
+            _enemyPlayer = enemyPlayer;
         }
 
         private void UpdateBlipImage()
@@ -53,7 +53,7 @@ namespace Radar
                     blipImage.sprite = AssetBundleManager.EnemyBlipDown;
                 }
                 // set blip color
-                switch (_enemyPlayer?.Profile.Info.Side)
+                switch (_enemyPlayer.Profile.Info.Side)
                 {
                     case EPlayerSide.Savage:
                         switch (_enemyPlayer.Profile.Info.Settings.Role)
@@ -82,6 +82,11 @@ namespace Radar
             blip.transform.localScale = new Vector3(blipSize, blipSize, blipSize);
         }
 
+        public void UpdateLastFireTime(float lastFireTime)
+        {
+            lastUpdateTime = lastFireTime;
+        }
+
         public void Update(bool updatePosition)
         {
             bool _show = false;
@@ -97,8 +102,9 @@ namespace Radar
                     blipPosition.z = targetPosition.z - playerPosition.z;
                 }
 
-                _show = blipPosition.x * blipPosition.x + blipPosition.z * blipPosition.z
-                     > radarRange * radarRange ? false : true;
+                var distance = blipPosition.x * blipPosition.x + blipPosition.z * blipPosition.z;
+                _show = (distance > radarOuterRange * radarOuterRange || distance < radarInnerRange * radarInnerRange) ? false : true;
+
                 if (!_isDead && _enemyPlayer.HealthController.IsAlive == _isDead)
                 {
                     _isDead = true;
@@ -132,8 +138,11 @@ namespace Radar
 
             if (show)
             {
-                UpdateAlpha();
                 UpdateBlipImage();
+                if (Radar.radarEnableFireModeConfig.Value && !_isDead)
+                    UpdateAlpha(Time.time - lastUpdateTime < 3, 3);
+                else
+                    UpdateAlpha(updatePosition);
                 UpdatePosition(updatePosition);
             }
         }
@@ -141,29 +150,16 @@ namespace Radar
 
     public class BlipLoot : Target
     {
-        public int _price = 0;
-        public LootItem _item;
-        public string _itemId;
+        public string _id;
+        public Transform _transform;
         private bool _lazyUpdate;
-        public int _key;
 
-        public BlipLoot(LootItem item, bool lazyUpdate = false, int key = 0)
+        public BlipLoot(string id, Transform transform, bool lazyUpdate = false)
         {
-            _item = item;
-            _itemId = item.ItemId;
+            _id = id;
+            _transform = transform;
+            targetPosition = transform.position;
             _lazyUpdate = lazyUpdate;
-            _key = key;
-            var offer = ItemExtensions.GetBestTraderOffer(item.Item);
-            targetPosition = item.TrackableTransform.position;
-
-            if (offer != null)
-            {
-                _price = offer.Price;
-            }
-            else
-            {
-                _price = 0;
-            }
         }
 
         private void UpdateBlipImage()
@@ -189,11 +185,11 @@ namespace Radar
             blip.transform.localScale = new Vector3(blipSize, blipSize, blipSize);
         }
 
-        public void Update(bool updatePosition, bool _show = false)
+        public void Update(bool _show)
         {
             if (_lazyUpdate)
             {
-                targetPosition = _item.TrackableTransform.position;
+                targetPosition = _transform.position;
                 _lazyUpdate = false;
             }
 
@@ -208,15 +204,10 @@ namespace Radar
             }
             else
             {
-                UpdateAlpha();
                 UpdateBlipImage();
-                UpdatePosition(updatePosition);
+                //UpdateAlpha();
+                UpdatePosition(true);
             }
-        }
-
-        public void DestoryLoot()
-        {
-            this.DestoryBlip();
         }
     }
 
@@ -229,17 +220,20 @@ namespace Radar
         protected Vector3 blipPosition;
         public Vector3 targetPosition;
         public static Vector3 playerPosition;
-        public static float radarRange;
+        public static float radarOuterRange;
+        public static float radarInnerRange;
+        protected float lastUpdateTime = Time.time;
 
         protected float playerHeight = 1.8f;
 
         public void SetBlip()
         {
-            var blipInstance = Object.Instantiate(AssetBundleManager.RadarBliphudPrefab,
-                HaloRadar.RadarHudBlipBasePosition.position, HaloRadar.RadarHudBlipBasePosition.rotation);
+            var blipInstance = Object.Instantiate(AssetBundleManager.RadarBliphudPrefab);
             blip = blipInstance as GameObject;
-            blip.transform.parent = HaloRadar.RadarHudBlipBasePosition.transform;
+            blip.transform.SetParent(HaloRadar.RadarBorderTransform.transform);
             blip.transform.SetAsLastSibling();
+            blip.transform.localPosition = Vector3.zero;
+            blip.transform.localRotation = Quaternion.identity;
 
             var blipTransform = blip.transform.Find("Blip/RadarEnemyBlip") as RectTransform;
             if (blipTransform != null)
@@ -252,6 +246,7 @@ namespace Radar
 
         public Target()
         {
+            SetBlip();
         }
 
         public void DestoryBlip()
@@ -264,12 +259,13 @@ namespace Radar
             Target.playerPosition = playerPosition;
         }
 
-        public static void setRadarRange(float radarRange)
+        public static void setRadarRange(float inner, float outer)
         {
-            Target.radarRange = radarRange;
+            Target.radarInnerRange = inner;
+            Target.radarOuterRange = outer;
         }
 
-        protected void UpdateAlpha()
+        protected void UpdateAlpha(bool updatePosition = false, float interval = -1)
         {
             float r, g, b, a;
             if (blipImage != null)
@@ -279,11 +275,26 @@ namespace Radar
                 b = blipImage.color.b;
                 a = blipImage.color.a;
                 float delta_a = 1;
-                if (Radar.radarScanInterval.Value > 0.8)
+                if (interval < 0)
                 {
-                    float ratio = (Time.time - HaloRadar.RadarLastUpdateTime) / Radar.radarScanInterval.Value;
-                    delta_a = 1 - ratio * ratio;
+                    interval = Radar.radarScanInterval.Value;
+                    if (interval > 3)
+                        interval = 3;
                 }
+
+                if (interval > 0.9)
+                {
+                    float timeDiff = Time.time - lastUpdateTime;
+                    if (interval <= timeDiff && updatePosition)
+                    {
+                        lastUpdateTime = Time.time;
+                    }
+                    float ratio = timeDiff / interval;
+                    delta_a = 1 - ratio * ratio;
+                    if (delta_a < 0)
+                        delta_a = 0;
+                }
+
                 blipImage.color = new Color(r, g, b, a * delta_a);
             }
         }
@@ -291,8 +302,7 @@ namespace Radar
         protected void UpdatePosition(bool updatePosition)
         {
             if (blip == null) return;
-            Quaternion reverseRotation = Quaternion.Inverse(HaloRadar.RadarHudBlipBasePosition.rotation);
-            blip.transform.localRotation = reverseRotation;
+            blip.transform.localRotation = Quaternion.Euler(0, 0, 360f - HaloRadar.RadarBorderTransform.rotation.eulerAngles.z);
 
             if (!updatePosition)
             {
@@ -301,26 +311,26 @@ namespace Radar
             // Calculate the position based on the angle and distance
             float distance = Mathf.Sqrt(blipPosition.x * blipPosition.x + blipPosition.z * blipPosition.z);
             // Calculate the offset factor based on the distance
-            float offsetRadius = Mathf.Pow(distance / radarRange, 0.4f + Radar.radarDistanceScaleConfig.Value * Radar.radarDistanceScaleConfig.Value / 2.0f);
+            float offsetRadius = Mathf.Pow(distance / radarOuterRange, 0.4f + Radar.radarDistanceScaleConfig.Value * Radar.radarDistanceScaleConfig.Value / 2.0f);
             // Calculate angle
             // Apply the rotation of the parent transform
-            Vector3 rotatedDirection = HaloRadar.RadarHudBlipBasePosition.rotation * Vector3.forward;
+            Vector3 rotatedDirection = HaloRadar.RadarBorderTransform.rotation * Vector3.forward;
             float angle = Mathf.Atan2(rotatedDirection.x, rotatedDirection.z) * Mathf.Rad2Deg;
             float angleInRadians = Mathf.Atan2(blipPosition.x, blipPosition.z);
 
-            // Get the scale of the RadarHudBlipBasePosition
-            Vector3 scale = HaloRadar.RadarHudBlipBasePosition.localScale;
+            // Get the scale of the RadarBorderTransform
+            Vector3 scale = HaloRadar.RadarBorderTransform.localScale;
             // Multiply the sizeDelta by the scale to account for scaling
-            Vector2 scaledSizeDelta = HaloRadar.RadarHudBlipBasePosition.sizeDelta;
+            Vector2 scaledSizeDelta = HaloRadar.RadarBorderTransform.sizeDelta;
             scaledSizeDelta.x *= scale.x;
             scaledSizeDelta.y *= scale.y;
             // Calculate the radius of the circular boundary
             float graphicRadius = Mathf.Min(scaledSizeDelta.x, scaledSizeDelta.y) * 0.68f;
 
             // Set the local position of the blip
-            blip.transform.localPosition = new Vector2(
+            blip.transform.localPosition = new Vector3(
                 Mathf.Sin(angleInRadians - angle * Mathf.Deg2Rad),
-                Mathf.Cos(angleInRadians - angle * Mathf.Deg2Rad))
+                Mathf.Cos(angleInRadians - angle * Mathf.Deg2Rad), -0.01f)
                 * offsetRadius * graphicRadius;
         }
     }
