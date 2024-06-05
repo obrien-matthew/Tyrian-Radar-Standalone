@@ -61,7 +61,7 @@ class ItemExtensions
         var result = trader.GetUserItemPrice(item);
         return result is null ? null : new(
             trader.LocalizedName,
-            (int)(result.Value.Amount / (item.Template.Height * item.Template.Width) / Math.Max(item.Weight, 0.01f)),
+            result.Value.Amount,
             trader.GetSupplyData().CurrencyCourses[result.Value.CurrencyId],
             item.StackObjectsCount
         );
@@ -137,10 +137,10 @@ class ItemExtensions
         traderCache[item.Name] = price;
         return price;
     }
-        
+
 
     public static int GetBestPrice(Item item)
-    {                                                                                 
+    {
         var fleaPrice = GetFleaPrice(item);
         var traderPrice = GetBestTraderPrice(item);
         return fleaPrice > traderPrice ? fleaPrice : traderPrice;
