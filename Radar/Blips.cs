@@ -114,19 +114,6 @@ namespace Radar
                 {
                     _show = Radar.radarEnableCorpseConfig.Value && _show;
                 }
-
-                // don't show scav corpses
-                if (_isDead && _enemyPlayer.Profile.Info.Side == EPlayerSide.Savage)
-                {
-                    if (
-                        _enemyPlayer.Profile.Info.Settings.Role == WildSpawnType.assault
-                        || _enemyPlayer.Profile.Info.Settings.Role == WildSpawnType.marksman
-                        || _enemyPlayer.Profile.Info.Settings.Role == WildSpawnType.assaultGroup
-                    )
-                    {
-                        _show = false;
-                    }
-                }
             }
 
             if (show && !_show && blipImage != null)
