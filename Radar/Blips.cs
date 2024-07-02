@@ -19,14 +19,27 @@ namespace Radar
         private void UpdateBlipImage()
         {
             if (blip == null || blipImage == null) return;
+            // set threshold for height difference
+            float totalThreshold = playerHeight * 1.2f * Radar.radarYHeightThreshold.Value;
             if (_isDead)
             {
-                blipImage.sprite = AssetBundleManager.EnemyBlipDead;
+                // set blip image for corpses
+                if (Mathf.Abs(blipPosition.y) <= totalThreshold)
+                {
+                    blipImage.sprite = AssetBundleManager.EnemyBlipDead;
+                }
+                else if (blipPosition.y > totalThreshold)
+                {
+                    blipImage.sprite = AssetBundleManager.EnemyBlipUp;
+                }
+                else if (blipPosition.y < -totalThreshold)
+                {
+                    blipImage.sprite = AssetBundleManager.EnemyBlipDown;
+                }
                 blipImage.color = Radar.corpseBlipColor.Value;
             }
             else
             {
-                float totalThreshold = playerHeight * 1.5f * Radar.radarYHeightThreshold.Value;
                 if (Mathf.Abs(blipPosition.y) <= totalThreshold)
                 {
                     blipImage.sprite = AssetBundleManager.EnemyBlip;
@@ -153,7 +166,7 @@ namespace Radar
         {
             if (blip == null || blipImage == null)
                 return;
-            float totalThreshold = playerHeight * 1.5f * Radar.radarYHeightThreshold.Value;
+            float totalThreshold = playerHeight * 1.2f * Radar.radarYHeightThreshold.Value;
             if (blipPosition.y > totalThreshold)
             {
                 blipImage.sprite = AssetBundleManager.EnemyBlipUp;
