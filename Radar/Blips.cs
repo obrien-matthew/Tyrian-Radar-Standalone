@@ -116,7 +116,7 @@ namespace Radar
                 }
 
                 // don't show scav corpses
-                if (Radar.radarEnableScavCorpseConfig.Value && _isDead && _enemyPlayer.Profile.Info.Side == EPlayerSide.Savage)
+                if (!Radar.radarEnableScavCorpseConfig.Value && _isDead && _enemyPlayer.Profile.Info.Side == EPlayerSide.Savage)
                 {
                     if (
                         _enemyPlayer.Profile.Info.Settings.Role == WildSpawnType.assault
@@ -196,6 +196,9 @@ namespace Radar
             blipPosition.x = targetPosition.x - playerPosition.x;
             blipPosition.y = targetPosition.y - playerPosition.y;
             blipPosition.z = targetPosition.z - playerPosition.z;
+
+            var distance = blipPosition.x * blipPosition.x + blipPosition.z * blipPosition.z;
+            _show = (distance > radarOuterRange * radarOuterRange || distance < radarInnerRange * radarInnerRange) ? false : true;
 
             if (!_show)
             {
