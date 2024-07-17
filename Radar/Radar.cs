@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Radar
 {
-    [BepInPlugin("Tyrian.Radar", "Radar", "1.1.5")]
+    [BepInPlugin("Tyrian.Radar", "Radar", "1.1.6")]
     public class Radar : BaseUnityPlugin
     {
         internal static Radar Instance { get; private set; }
@@ -38,8 +38,8 @@ namespace Radar
         public static ConfigEntry<float> radarBlipSizeConfig;
         public static ConfigEntry<float> radarDistanceScaleConfig;
         public static ConfigEntry<float> radarYHeightThreshold;
-        public static ConfigEntry<float> radarOffsetYConfig;
-        public static ConfigEntry<float> radarOffsetXConfig;
+        public static ConfigEntry<int> radarOffsetYConfig;
+        public static ConfigEntry<int> radarOffsetXConfig;
         public static ConfigEntry<int> radarOuterRangeConfig;
         public static ConfigEntry<int> radarInnerRangeConfig;
         public static ConfigEntry<float> radarScanInterval;
@@ -72,7 +72,7 @@ namespace Radar
             // Add a custom configuration option for the Apply button
             radarLanguage = Config.Bind<string>(baseSettings, "Language", "EN",
                 new ConfigDescription("Preferred language, if not available will tried English",
-                new AcceptableValueList<string>("EN", "ZH", "RU")));
+                new AcceptableValueList<string>("EN", "ZH", "RU", "KO")));
 
             radarEnableConfig = Config.Bind(baseSettings, Locales.GetTranslatedString("radar_enable"), true);
             radarEnableShortCutConfig = Config.Bind(baseSettings, Locales.GetTranslatedString("radar_enable_shortcut"), new KeyboardShortcut(KeyCode.F10));
@@ -94,10 +94,10 @@ namespace Radar
                 new ConfigDescription(Locales.GetTranslatedString("radar_distance_scale_info"), new AcceptableValueRange<float>(0.1f, 2f)));
             radarYHeightThreshold = Config.Bind<float>(radarSettings, Locales.GetTranslatedString("radar_y_height_threshold"), 1f,
                 new ConfigDescription(Locales.GetTranslatedString("radar_y_height_threshold_info"), new AcceptableValueRange<float>(1f, 4f)));
-            radarOffsetXConfig = Config.Bind<float>(radarSettings, Locales.GetTranslatedString("radar_x_position"), 300f,
-                new ConfigDescription(Locales.GetTranslatedString("radar_x_position_info"), new AcceptableValueRange<float>(-4000f, 4000f)));
-            radarOffsetYConfig = Config.Bind<float>(radarSettings, Locales.GetTranslatedString("radar_y_position"), 150f,
-                new ConfigDescription(Locales.GetTranslatedString("radar_y_position_info"), new AcceptableValueRange<float>(-4000f, 4000f)));
+            radarOffsetXConfig = Config.Bind<int>(radarSettings, Locales.GetTranslatedString("radar_x_position"), 300,
+                new ConfigDescription(Locales.GetTranslatedString("radar_x_position_info"), new AcceptableValueRange<int>(0, 4000)));
+            radarOffsetYConfig = Config.Bind<int>(radarSettings, Locales.GetTranslatedString("radar_y_position"), 150,
+                new ConfigDescription(Locales.GetTranslatedString("radar_y_position_info"), new AcceptableValueRange<int>(0, 3000)));
             radarOuterRangeConfig = Config.Bind<int>(radarSettings, Locales.GetTranslatedString("radar_outer_range"), 128,
                 new ConfigDescription(Locales.GetTranslatedString("radar_outer_range_info"), new AcceptableValueRange<int>(32, 1024)));
             radarInnerRangeConfig = Config.Bind<int>(radarSettings, Locales.GetTranslatedString("radar_inner_range"), 0,
